@@ -1,0 +1,7 @@
+fastapi>=0.95
+uvicorn[standard]>=0.18
+python-multipart>=0.0.5
+pillow>=9.0
+wordcloud>=1.8
+pandas>=2.0
+bibtexparser>=1.2
