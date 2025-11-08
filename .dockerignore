@@ -4,6 +4,4 @@ __pycache__
 .env
 .venv
 venv/
-data/
-outputs/
 *.log

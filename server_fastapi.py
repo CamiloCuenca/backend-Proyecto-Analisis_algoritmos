@@ -82,6 +82,33 @@ async def upload_bib(file: UploadFile = File(...)):
     return JSONResponse({'saved_path': f'/static/data/{dest.name}', 'filename': dest.name})
 
 
+@app.post('/upload_data')
+async def upload_data(file: UploadFile = File(...)):
+    """Upload a data file (records.csv or frequencies.json) into the server `data/` folder.
+
+    Use this to provide the CSV/JSON that `wordcloud_minimal.py` expects when deploying to Render.
+    Returns the saved path under /static.
+    """
+    safe_name = os.path.basename(file.filename)
+    if not safe_name:
+        raise HTTPException(status_code=400, detail='Invalid filename')
+
+    # Accept only the expected data filenames for safety
+    allowed = {'records.csv', 'frequencies.json'}
+    if safe_name not in allowed:
+        raise HTTPException(status_code=400, detail=f'Allowed filenames: {allowed}')
+
+    dest = DATA_DIR / safe_name
+    try:
+        content = await file.read()
+        with dest.open('wb') as fh:
+            fh.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Could not save file: {e}')
+
+    return JSONResponse({'saved_path': f'/static/data/{dest.name}', 'filename': dest.name})
+
+
 @app.post('/run_wordcloud')
 async def run_wordcloud(timeout: int = 300):
     """Run the local `wordcloud_minimal.py` script and return its stdout/stderr and output locations.
