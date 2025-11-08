@@ -48,6 +48,49 @@ Si tu app necesita control del sistema (por ejemplo, dependencias nativas), pued
 - `GET /api/image` — devuelve `outputs/nube_palabras.png` (si existe)
 - `GET /api/outputs/{filename}` — sirve un archivo dentro de `outputs/`
 
+## Endpoints (URL pública en Render)
+Base URL: https://backend-proyecto-analisis-algoritmos.onrender.com
+
+- POST https://backend-proyecto-analisis-algoritmos.onrender.com/api/upload_bib
+	- Descripción: Subir un archivo `.bib` (multipart/form-data, campo `file`).
+	- Respuesta: JSON con `saved_path` y `filename`.
+
+- POST https://backend-proyecto-analisis-algoritmos.onrender.com/api/upload_data
+	- Descripción: Subir `records.csv` o `frequencies.json` (multipart/form-data, campo `file`).
+	- Restricción: solo acepta `records.csv` o `frequencies.json` como nombre de archivo.
+	- Respuesta: JSON con `saved_path` y `filename`.
+
+- POST https://backend-proyecto-analisis-algoritmos.onrender.com/api/run_wordcloud?timeout=300
+	- Descripción: Ejecuta `wordcloud_minimal.py` en el servidor. Parámetro opcional `timeout` (segundos).
+	- Respuesta: JSON con `ok`, `returncode`, `stdout`, `stderr`, `png_url`, `pdf_url`.
+
+- GET https://backend-proyecto-analisis-algoritmos.onrender.com/api/image
+	- Descripción: Devuelve `nube_palabras.png` si existe (Content-Type: image/png). Retorna 404 si no existe.
+
+- GET https://backend-proyecto-analisis-algoritmos.onrender.com/api/outputs/{filename}
+	- Descripción: Serve archivos dentro de `outputs/` (p.ej. `nube_palabras.png`).
+
+Puedes probar y depurar usando Swagger UI en:
+https://backend-proyecto-analisis-algoritmos.onrender.com/docs
+
+Ejemplos rápidos (PowerShell)
+```powershell
+# Status
+Invoke-RestMethod -Uri 'https://backend-proyecto-analisis-algoritmos.onrender.com/api/status' -Method Get
+
+# Subir sample.bib (form-data)
+Invoke-RestMethod -Uri 'https://backend-proyecto-analisis-algoritmos.onrender.com/api/upload_bib' -Method Post -Form @{ file = Get-Item '.\sample.bib' }
+
+# Subir records.csv o frequencies.json
+Invoke-RestMethod -Uri 'https://backend-proyecto-analisis-algoritmos.onrender.com/api/upload_data' -Method Post -Form @{ file = Get-Item '.\records.csv' }
+
+# Ejecutar generación (timeout en segundos)
+Invoke-RestMethod -Uri 'https://backend-proyecto-analisis-algoritmos.onrender.com/api/run_wordcloud?timeout=300' -Method Post
+
+# Descargar la imagen generada
+Invoke-WebRequest -Uri 'https://backend-proyecto-analisis-algoritmos.onrender.com/api/image' -OutFile .\nube_palabras.png
+```
+
 ## Recomendaciones
 - Para tareas largas (generación que puede tardar), mover la generación a un worker (Celery, RQ) o usar un background worker en Render.
 - Restringir CORS en producción.
