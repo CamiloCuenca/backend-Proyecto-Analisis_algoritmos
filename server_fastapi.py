@@ -178,6 +178,49 @@ async def get_output_file(filename: str):
     return FileResponse(path=str(file_path), media_type=media_type, filename=safe_name)
 
 
+@app.get('/api/records_total')
+async def records_total():
+    """Return the total number of records available to the wordcloud generator.
+
+    Priority:
+    - If `data/records.csv` exists, return its row count (excluding header).
+    - Otherwise, try to parse `.bib` files in `data/` (if `bibtexparser` is installed).
+    - If none found, return 0.
+    """
+    records_path = DATA_DIR / 'records.csv'
+    if records_path.exists():
+        try:
+            import csv
+            with records_path.open('r', encoding='utf-8', errors='ignore') as fh:
+                reader = csv.reader(fh)
+                # subtract header if present
+                total = sum(1 for _ in reader)
+                if total > 0:
+                    total = max(0, total - 1)
+            return JSONResponse({'total_records': total, 'source': 'records.csv'})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f'Error reading records.csv: {e}')
+
+    # Fallback: count entries in .bib files if bibtexparser available
+    bib_count = 0
+    try:
+        import bibtexparser
+        for bibf in DATA_DIR.glob('*.bib'):
+            try:
+                text = bibf.read_text(encoding='utf-8', errors='ignore')
+                db = bibtexparser.loads(text)
+                bib_count += len(db.entries)
+            except Exception:
+                continue
+        if bib_count > 0:
+            return JSONResponse({'total_records': bib_count, 'source': 'bib_files'})
+    except Exception:
+        # bibtexparser not installed or other error -> ignore
+        pass
+
+    return JSONResponse({'total_records': 0, 'source': 'none'})
+
+
 # Also expose the same endpoints under the /api prefix so the frontend
 # that was configured for Vercel (/api/upload_bib) works against this
 # local FastAPI server without editing `index.html`.
